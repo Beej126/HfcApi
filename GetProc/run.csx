@@ -57,6 +57,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
 
   var parms = req.GetQueryNameValuePairs();
 
+  /*
   SqlClientHelpers.Proc.DefaultConnectionString = $"User ID={Env("sqluser")};Password={Env("sqlpassword")};Initial Catalog=SlingshotAX;Data Source={Env("sqlserver")};";
   traceLog.Info($"DefaultConnectionString: {SqlClientHelpers.Proc.DefaultConnectionString}");
 
@@ -70,6 +71,9 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
     }
   }
 
-  return req.CreateResponse(HttpStatusCode.OK, DataTableToJson(proc.ExecDataSet().Tables), 
+  return req.CreateResponse(HttpStatusCode.OK, 
+    DataTableToJson(proc.ExecDataSet().Tables).ToString(), 
     System.Net.Http.Formatting.JsonMediaTypeFormatter.DefaultMediaType);
+    */
+  req.CreateResponse(HttpStatusCode.OK, "testing");
 }
