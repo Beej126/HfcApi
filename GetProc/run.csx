@@ -1,4 +1,5 @@
 #r "D:\home\site\wwwroot\GetProc\SqlClientHelpers.dll"
+#r "System.Data"
 using System.Net;
 using System;
 using System.Data;
