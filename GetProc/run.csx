@@ -16,10 +16,10 @@ public static JArray DataTableToJson(this DataTableCollection tables)
   {
     JArray rowsArray = new JArray();
     JObject row;
-    foreach (System.Data.DataRow dr in source.Rows)
+    foreach (System.Data.DataRow dr in t.Rows)
     {
       row = new JObject();
-      foreach (System.Data.DataColumn col in source.Columns)
+      foreach (var col in t.Columns)
       {
         row.Add(col.ColumnName.Trim(), JToken.FromObject(dr[col]));
       }
@@ -57,10 +57,18 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
 
   var parms = req.GetQueryNameValuePairs();
 
-  SqlClientHelpers.Proc.DefaultConnectionString = $"User ID={Env.ScriptArgs[0]};Password={Env.ScriptArgs[1]};Initial Catalog=SlingshotAX;Data Source={Env.ScriptArgs[2]};";
+  SqlClientHelpers.Proc.DefaultConnectionString = $"User ID={Env("sqluser")};Password={Env("sqlpassword")};Initial Catalog=SlingshotAX;Data Source={Env("sqlserver")};";
+  traceLog.Info($"DefaultConnectionString: {SqlClientHelpers.Proc.DefaultConnectionString}");
 
-  using (var proc = new SqlClientHelpers.Proc($"dbo.{parms["procName"]}"))
-    proc.AssignValues(parms);
+  using (var proc = new SqlClientHelpers.Proc($"dbo.{parms.Get("procName")}")) { 
+    var sqlparms = proc.Parameters;
+    foreach(var nv in parms) { 
+      if (sqlparms.Contains(nv.Name)) {
+        traceLog.Info($"name: {nv.Name}, value: {nv.Value}");
+        proc[nv.Name] = nv.Value;
+      }
+    }
+  }
 
   return req.CreateResponse(HttpStatusCode.OK, DataTableToJson(proc.ExecDataSet().Tables), 
     System.Net.Http.Formatting.JsonMediaTypeFormatter.DefaultMediaType);
