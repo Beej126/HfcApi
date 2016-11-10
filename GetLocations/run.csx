@@ -26,7 +26,7 @@ public class Group {
 
 public static string Env(string name) => System.Environment.GetEnvironmentVariable(name /*, EnvironmentVariableTarget.Process*/);
 private static string _baseUrl;
-private static string baseUrl {get { return _baseUrl ?? (_baseUrl = Env("baseUrl")); }}
+private static string baseUrl {get { return _baseUrl ?? (_baseUrl = Env("gpsBaseUrl")); }}
 
 private static void login() {
     traceLog.Info($"[login] baseUrl: {baseUrl}, email: {Env("email")}");
@@ -35,9 +35,9 @@ private static void login() {
     //  *** so that subsequent requests for data are authorized ***
     //login is pretty slow so we'll want to cache this state in our API layer
     var fields = new NameValueCollection();
-    fields.Add("user[email]", Env("email"));
-    fields.Add("user[password]", Env("password"));
-    fields.Add("subdomain", Env("subdomain"));
+    fields.Add("user[email]", Env("gpsEmail"));
+    fields.Add("user[password]", Env("gpsPassword"));
+    fields.Add("subdomain", Env("gpsSubdomain"));
     client.UploadValues($"{baseUrl}/users/sign_in", fields);
 }
 
