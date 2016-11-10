@@ -1,10 +1,12 @@
-#r "D:\home\site\wwwroot\GetProc\SqlClientHelpers.dll"
+#r "SqlClientHelpers.dll"
 #r "System.Data"
 using System.Net;
 using System;
+using System.Linq;
 using System.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlClientHelpers;
 
 public static string Env(string name) => System.Environment.GetEnvironmentVariable(name /*, EnvironmentVariableTarget.Process*/);
 
@@ -16,10 +18,10 @@ public static JArray DataTableToJson(this DataTableCollection tables)
   {
     JArray rowsArray = new JArray();
     JObject row;
-    foreach (System.Data.DataRow dr in t.Rows)
+    foreach (DataRow dr in t.Rows)
     {
       row = new JObject();
-      foreach (var col in t.Columns)
+      foreach (DataColumn col in t.Columns)
       {
         row.Add(col.ColumnName.Trim(), JToken.FromObject(dr[col]));
       }
@@ -55,25 +57,25 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
       : req.CreateResponse(HttpStatusCode.OK, "Hello " + name);
   */
 
-  var parms = req.GetQueryNameValuePairs();
+  System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>parms = req.GetQueryNameValuePairs();
+  traceLog.Info($"parms.Count(): {parms.Count()}, first: {parms.First().Value}");
 
-  /*
-  SqlClientHelpers.Proc.DefaultConnectionString = $"User ID={Env("sqluser")};Password={Env("sqlpassword")};Initial Catalog=SlingshotAX;Data Source={Env("sqlserver")};";
-  traceLog.Info($"DefaultConnectionString: {SqlClientHelpers.Proc.DefaultConnectionString}");
+  Proc.DefaultConnectionString = $"User ID={Env("sqluser")};Password={Env("sqlpassword")};Initial Catalog=SlingshotAX;Data Source={Env("sqlserver")};";
+  SqlClientHelpers.Proc.MessageCallback = (msg) => { }; //this suppresses query option hint warning messages turning into exceptions
+  traceLog.Info($"DefaultConnectionString: {Proc.DefaultConnectionString}");
 
-  using (var proc = new SqlClientHelpers.Proc($"dbo.{parms.Get("procName")}")) { 
+  string result = "no data";
+  using (var proc = new Proc($"dbo.ProdDetail_mobile")) {  //{parms.Get("procName")}
     var sqlparms = proc.Parameters;
     foreach(var nv in parms) { 
-      if (sqlparms.Contains(nv.Name)) {
-        traceLog.Info($"name: {nv.Name}, value: {nv.Value}");
-        proc[nv.Name] = nv.Value;
-      }
+      var key = "@"+nv.Key;
+      traceLog.Info($"name: {key}, value: {nv.Value}");
+      proc[key] = nv.Value;
     }
+    result = DataTableToJson(proc.ExecuteDataSet().Tables).ToString();
   }
+    return req.CreateResponse(HttpStatusCode.OK, 
+      result,
+      System.Net.Http.Formatting.JsonMediaTypeFormatter.DefaultMediaType);
 
-  return req.CreateResponse(HttpStatusCode.OK, 
-    DataTableToJson(proc.ExecDataSet().Tables).ToString(), 
-    System.Net.Http.Formatting.JsonMediaTypeFormatter.DefaultMediaType);
-    */
-  req.CreateResponse(HttpStatusCode.OK, "testing");
 }
